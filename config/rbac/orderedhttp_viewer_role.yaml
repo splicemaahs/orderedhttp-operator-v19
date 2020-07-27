@@ -1,0 +1,20 @@
+# permissions for end users to view orderedhttps.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: orderedhttp-viewer-role
+rules:
+- apiGroups:
+  - orderedhttp.splicemachine.io
+  resources:
+  - orderedhttps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - orderedhttp.splicemachine.io
+  resources:
+  - orderedhttps/status
+  verbs:
+  - get

@@ -1,0 +1,24 @@
+# permissions for end users to edit orderedhttps.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: orderedhttp-editor-role
+rules:
+- apiGroups:
+  - orderedhttp.splicemachine.io
+  resources:
+  - orderedhttps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - orderedhttp.splicemachine.io
+  resources:
+  - orderedhttps/status
+  verbs:
+  - get

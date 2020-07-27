@@ -1,0 +1,7 @@
+apiVersion: orderedhttp.splicemachine.io/v1alpha1
+kind: OrderedHttp
+metadata:
+  name: orderedhttp-sample
+spec:
+  # Add fields here
+  foo: bar
