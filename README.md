@@ -134,20 +134,14 @@ Create this patch file, then apply to the current sources
 
 ```bash
 mkdir -p patches
-curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator/master/patches/apicode.patch -o patches/apicode.patch
+curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/master/patches/apicode.patch -o patches/apicode.patch
 ```
 
 ```bash
 git apply patches/apicode.patch
-# the 'generate k8s' process builds code based on the properties added to the Spec and Status
-# sections of ./pkg/apis/orderedhttp/v1alpha1/orderedhttp_types.go'
-operator-sdk generate k8s
-```
-
-### Add a controller
-
-```bash
-operator-sdk add controller --api-version=orderedhttp.splicemachine.io/v1alpha1 --kind=OrderedHttp
+# the 'make' process builds code based on the properties added to the Spec and Status
+# sections of ./api/orderedhttp/v1alpha1/orderedhttp_types.go'
+make
 ```
 
 ### Add reconciler code to the controller
