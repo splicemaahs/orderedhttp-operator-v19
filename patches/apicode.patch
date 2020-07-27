@@ -1,0 +1,30 @@
+diff --git a/.gitignore b/.gitignore
+index d97ffc5..4a1234c 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,4 +1,4 @@
+-
++.DS_Store
+ # Binaries for programs and plugins
+ *.exe
+ *.exe~
+diff --git a/api/v1alpha1/orderedhttp_types.go b/api/v1alpha1/orderedhttp_types.go
+index c6b8af7..4cffb82 100644
+--- a/api/v1alpha1/orderedhttp_types.go
++++ b/api/v1alpha1/orderedhttp_types.go
+@@ -29,13 +29,14 @@ type OrderedHttpSpec struct {
+ 	// Important: Run "make" to regenerate code after modifying this file
+ 
+ 	// Foo is an example field of OrderedHttp. Edit OrderedHttp_types.go to remove/update
+-	Foo string `json:"foo,omitempty"`
++	Replicas int32 `json:"replicas"`
+ }
+ 
+ // OrderedHttpStatus defines the observed state of OrderedHttp
+ type OrderedHttpStatus struct {
+ 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+ 	// Important: Run "make" to regenerate code after modifying this file
++	PodNames []string `json:"podnames"`
+ }
+ 
+ // +kubebuilder:object:root=true

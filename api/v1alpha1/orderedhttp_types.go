@@ -29,13 +29,14 @@ type OrderedHttpSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of OrderedHttp. Edit OrderedHttp_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Replicas int32 `json:"replicas"`
 }
 
 // OrderedHttpStatus defines the observed state of OrderedHttp
 type OrderedHttpStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	PodNames []string `json:"podnames"`
 }
 
 // +kubebuilder:object:root=true
