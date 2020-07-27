@@ -99,6 +99,7 @@ Logon to your Docker Hub and create yourself two repositories:
 ### Build our custom nginx-delay docker image
 
 ```bash
+# create an ordered-http directory somewhere and change into that directory.
 mkdir -p nginx-delay
 curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/master/nginx-delay/Dockerfile -o nginx-delay/Dockerfile
 curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/master/nginx-delay/Makefile -o nginx-delay/Makefile
@@ -117,7 +118,6 @@ make push
 
 ```bash
 operator-sdk init --domain=splicemachine.io --repo=github.com/splicemaahs/orderedhttp-operator
-cd orderedhttp-operator
 ```
 
 ### Add an api / controller
@@ -125,8 +125,7 @@ cd orderedhttp-operator
 This output produces some warning lines, this appears to be normal as the resulting operator works without issue.
 
 ```bash
-operator-sdk create api --group=orderedhttp --version=v1alpha1 --kind=OrderedHttp
-# Answer Y to create both resources
+operator-sdk create api --controller --resource --group=orderedhttp --version=v1alpha1 --kind=OrderedHttp
 ```
 
 ### Add Properties to the api
