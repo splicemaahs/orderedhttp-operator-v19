@@ -29,7 +29,11 @@ operator-sdk version
 
 These were the current brew versions as of July 27th, 2020.
 
+---
+
 ## Clone and Run
+
+---
 
 If you have a kubernetes cluster available and you want to see this operator in action, follow these
 steps.
@@ -42,54 +46,90 @@ Logon to your Docker Hub and create yourself two repositories:
 - nginx-delay
 
 ```bash
-# change into a directory in your $GOPATH/src/
+# Change into a temporary directory
+mkdir -p ~/tmp
+cd ~/tmp
 git clone https://github.com/splicemaahs/orderedhttp-operator-v19.git
-cd orderedhttp-operator/nginx-delay
+cd orderedhttp-operator-v19/nginx-delay
 vi Makefile
 # change the `splicemaahs` reference to YOUR docker id, so it will push to your newly created
 # repository
 make build
 make push
 cd ..
-operator-sdk build YOURDOCKERID/orderedhttp-operator:latest
-docker push YOURDOCKERID/orderedhttp-operator:latest
+export DOCKER_USERNAME=<docker hub user>
+make docker-build IMG=${DOCKER_USERNAME}/orderedhttp-operator:v0.0.1
+make docker-push IMG=${DOCKER_USERNAME}/orderedhttp-operator:v0.0.1
+```
+
+### Install the CustomResourceDefinition to Kubernetes
+
+Ensure you are connected to your K8s cluster and run:
+
+```bash
+make install
 ```
 
 ### Create Kubernetes Resources
 
 ```bash
-kubectl create -f deploy/crds/orderedhttp_v1alpha1_orderedhttp_crd.yaml
-kubectl create -f deploy/service_account.yaml
-kubectl create -f deploy/role.yaml
-kubectl create -f deploy/role_binding.yaml
-kubectl create -f deploy/operator.yaml
-kubectl get pods
-kubectl create -f deploy/crds/orderedhttp_v1alpha1_orderedhttp_cr.yaml
+# the next commands edits this file: config/default/kustomization.yaml
+# these two NEED to match with the second having a suffix of "-"
+# An oddity with "kustomize" the "set nameprefix" is CASE sensitive in a very ODD way.
+# it is because "nameprefix" is a parameter to "kustomize" and not an arbitrary "path" of yaml.
+cd config/default/ && kustomize edit set namespace "orderedhttp-system" && cd ../..
+cd config/default/ && kustomize edit set nameprefix "orderedhttp-" && cd ../..
+export DOCKER_USERNAME=<docker hub user>
+make deploy IMG=${DOCKER_USERNAME}/orderedhttp-operator:v0.0.1
+```
+
+### Validate that the Controller/Operator is running
+
+```bash
+kubectl -n orderedhttp-system get deployment -l control-plane=controller-manager
+kubectl -n orderedhttp-system get pod -l control-plane=controller-manager
+```
+
+### Create the OrderedHttp Resource
+
+Edit the file `config/samples/orderedhttp_v1alpha1_orderedhttp.yaml` to create our
+custom CR
+
+```yaml
+apiVersion: orderedhttp.splicemachine.io/v1alpha1
+kind: OrderedHttp
+metadata:
+  name: orderedhttp-sample
+spec:
+  # Add fields here
+  replicas: 3
+```
+
+```bash
+kubectl -n orderedhttp-system create -f config/samples/orderedhttp_v1alpha1_orderedhttp.yaml
 ```
 
 ### Check on Resources
 
 ```bash
-kubectl get pods
-kubectl describe OrderedHttp
-kubectl logs $(kubectl get pods | grep orderedhttp-operator | tr -s ' ' | cut -d' ' -f1)
+kubectl -n orderedhttp-system get pods
+kubectl -n orderedhttp-system describe OrderedHttp
+kubectl logs -f $(kubectl get pods | grep orderedhttp-controller | tr -s ' ' | cut -d' ' -f1) -c manager
 ```
 
 ### Delete Resources
 
 ```bash
-kubectl delete -f deploy/crds/orderedhttp_v1alpha1_orderedhttp_cr.yaml
-kubectl delete -f deploy/operator.yaml
-
-kubectl create -f deploy/crds/orderedhttp_v1alpha1_orderedhttp_crd.yaml
-kubectl create -f deploy/service_account.yaml
-kubectl create -f deploy/role.yaml
-kubectl create -f deploy/role_binding.yaml
-
-kubectl get pods
+kubectl delete namespace orderedhttp-system
+for i in $(kubectl get clusterrole,clusterrolebinding --no-headers | grep orderedhttp | awk '{ print $1 }'); do kubectl delete ${i}; done
+kubectl delete customresourcedefinition orderedhttps.orderedhttp.splicemachine.io
 ```
 
+---
+
 ## Create Operator using operator-sdk
+
+---
 
 ### Create Docker Hub Repositories, if not already existing
 
@@ -180,7 +220,7 @@ git apply patches/rbac.patch
 make manifests
 ```
 
-### Install the CustomResourceDefinition to Kubernetes
+### Install the CustomResourceDefinition to Kubernetes (same as above)
 
 Ensure you are connected to your K8s cluster and run:
 
@@ -201,16 +241,20 @@ docker-build:
 
 ```bash
 export DOCKER_USERNAME=<docker hub user>
-make docker-build IMG=${DOCKER_USERNAME}/orderedhttp_operator:v0.0.1
+make docker-build IMG=${DOCKER_USERNAME}/orderedhttp-operator:v0.0.1
 make docker-push IMG=${DOCKER_USERNAME}/orderedhttp-operator:v0.0.1
 ```
 
 ### Deploy Operator/Controller to Kubernetes
 
 ```bash
-kubectl create namespace optest
-# the next command edits this file: config/default/kustomization.yaml
-cd config/default/ && kustomize edit set namespace "optest" && cd ../..
+kubectl create namespace orderedhttp-system
+# the next commands edits this file: config/default/kustomization.yaml
+# these two need to match up until the "system" part
+# An oddity with "kustomize" the "set nameprefix" is CASE sensitive in a very ODD way.
+# it is because "nameprefix" is a parameter to "kustomize" and not an arbitrary "path" of yaml.
+cd config/default/ && kustomize edit set namespace "orderedhttp-system" && cd ../..
+cd config/default/ && kustomize edit set nameprefix "orderedhttp-" && cd ../..
 export DOCKER_USERNAME=<docker hub user>
 make deploy IMG=${DOCKER_USERNAME}/orderedhttp-operator:v0.0.1
 ```
@@ -234,11 +278,11 @@ service/orderedhttp-operator-v19-controller-manager-metrics-service created
 deployment.apps/orderedhttp-operator-v19-controller-manager created
 ```
 
-### Validate that the Controller/Operator is running
+### Validate that the Controller/Operator is running (same as above)
 
 ```bash
-kubectl -n optest get deployment -l control-plane=controller-manager
-kubectl -n optest get pod -l control-plane=controller-manager
+kubectl -n orderedhttp-system get deployment -l control-plane=controller-manager
+kubectl -n orderedhttp-system get pod -l control-plane=controller-manager
 ```
 
 ### Create an instance of our Kubernetes Custom Resource (same as above)
@@ -257,31 +301,35 @@ spec:
 ```
 
 ```bash
-kubectl -n optest create -f config/samples/orderedhttp_v1alpha1_orderedhttp.yaml
-```
-
-# this creates an instance of our custom 'Kind'
-kubectl create -f deploy/crds/orderedhttp_v1alpha1_orderedhttp_cr.yaml
+kubectl -n orderedhttp-system create -f config/samples/orderedhttp_v1alpha1_orderedhttp.yaml
 ```
 
 ### Check on Resources (same as above)
 
 ```bash
-kubectl get pods
-kubectl describe OrderedHttp
-kubectl logs $(kubectl get pods | grep orderedhttp-operator | tr -s ' ' | cut -d' ' -f1)
+kubectl -n orderedhttp-system get pods
+kubectl -n orderedhttp-system describe OrderedHttp
+kubectl logs -f $(kubectl get pods | grep orderedhttp-controller | tr -s ' ' | cut -d' ' -f1) -c manager
+```
+
+### Adjust number of replicas UP
+
+```bash
+kubectl patch orderedhttp orderedhttp-sample -p '{"spec":{"replicas": 6}}' --type=merge
+kubectl logs -f $(kubectl get pods | grep orderedhttp-controller | tr -s ' ' | cut -d' ' -f1) -c manager
+```
+
+### Adjust number of replicas DOWN
+
+```bash
+kubectl patch orderedhttp orderedhttp-sample -p '{"spec":{"replicas": 2}}' --type=merge
+kubectl logs -f $(kubectl get pods | grep orderedhttp-controller | tr -s ' ' | cut -d' ' -f1) -c manager
 ```
 
 ### Delete Resources (same as above)
 
 ```bash
-kubectl delete -f deploy/crds/orderedhttp_v1alpha1_orderedhttp_cr.yaml
-kubectl delete -f deploy/operator.yaml
-
-kubectl create -f deploy/crds/orderedhttp_v1alpha1_orderedhttp_crd.yaml
-kubectl create -f deploy/service_account.yaml
-kubectl create -f deploy/role.yaml
-kubectl create -f deploy/role_binding.yaml
-
-kubectl get pods
+kubectl delete namespace orderedhttp-system
+for i in $(kubectl get clusterrole,clusterrolebinding --no-headers | grep orderedhttp | awk '{ print $1 }'); do kubectl delete ${i}; done
+kubectl delete customresourcedefinition orderedhttps.orderedhttp.splicemachine.io
 ```
