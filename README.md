@@ -13,6 +13,8 @@ Clearly with a basic structure of this single docker image, the same functionali
 using Service and StatefulSet features.  This project is meant to be a learning tool to allow
 iteration and discovery.
 
+This loosely follows the quickstart from the [Operator-SDK Docs](https://sdk.operatorframework.io/docs/golang/quickstart/)
+
 ## Requirements
 
 ```bash
@@ -168,37 +170,96 @@ git apply patches/typesdescriptions.patch
 make manifests
 ```
 
-### Update operator deploy for docker image name
+### Add RBAC hints to the Controller code
 
 ```bash
+mkdir -p patches
+curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/master/patches/rbac.patch -o patches/rbac.patch
+# ./api/v1alpha1/orderedhttp_types.go
+git apply patches/rbac.patch
 make manifests
-vi deploy/operator.yaml
-# change the 'image: REPLACE_IMAGE' reference to 'image: YOURDOCKERID/orderedhttp-operator:latest'
 ```
 
-### Build the operator docker image
+### Install the CustomResourceDefinition to Kubernetes
+
+Ensure you are connected to your K8s cluster and run:
 
 ```bash
-go mod vendor # <- you need only run this once, and can rebuild with the 'build' command
-# this process will fail on go syntax errors as it builds the code as part of the docker image build.
-operator-sdk build YOURDOCKERID/orderedhttp-operator:latest
-make docker-build IMG=quay.io/$USERNAME/memcached-operator:v0.0.1
-# push our image to Docker Hub
-docker push YOURDOCKERID/orderedhttp-operator:latest
+make install
 ```
 
-### Create Kubernetes Resources (same as above)
+### Build and Push the Docker Image for the Operator/Controller
+
+You will want to edit the Makefile, find 'docker-build:' and remove 'test' from the line.
+
+```plaintext
+# Build the docker image
+# docker-build: test
+docker-build:
+        docker build . -t ${IMG}
+```
 
 ```bash
-# this installs/defines the Custom Resource Definition
-kubectl create -f deploy/crds/orderedhttp_v1alpha1_orderedhttp_crd.yaml
-# these create the ability for the operator to interact with the k8s controller
-kubectl create -f deploy/service_account.yaml
-kubectl create -f deploy/role.yaml
-kubectl create -f deploy/role_binding.yaml
-# this deploys the operator pod itself
-kubectl create -f deploy/operator.yaml
-kubectl get pods
+export DOCKER_USERNAME=<docker hub user>
+make docker-build IMG=${DOCKER_USERNAME}/orderedhttp_operator:v0.0.1
+make docker-push IMG=${DOCKER_USERNAME}/orderedhttp-operator:v0.0.1
+```
+
+### Deploy Operator/Controller to Kubernetes
+
+```bash
+kubectl create namespace optest
+# the next command edits this file: config/default/kustomization.yaml
+cd config/default/ && kustomize edit set namespace "optest" && cd ../..
+export DOCKER_USERNAME=<docker hub user>
+make deploy IMG=${DOCKER_USERNAME}/orderedhttp-operator:v0.0.1
+```
+
+Output of the deploy will look similar to this:
+
+```plaintext
+/Users/cmaahs/go/bin/controller-gen "crd:trivialVersions=true" rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+cd config/manager && /usr/local/bin/kustomize edit set image controller=splicemaahs/orderedhttp-operator:v0.0.1
+/usr/local/bin/kustomize build config/default | kubectl apply -f -
+namespace/orderedhttp-operator-v19-system created
+customresourcedefinition.apiextensions.k8s.io/orderedhttps.orderedhttp.splicemachine.io configured
+role.rbac.authorization.k8s.io/orderedhttp-operator-v19-leader-election-role created
+clusterrole.rbac.authorization.k8s.io/orderedhttp-operator-v19-manager-role created
+clusterrole.rbac.authorization.k8s.io/orderedhttp-operator-v19-proxy-role created
+clusterrole.rbac.authorization.k8s.io/orderedhttp-operator-v19-metrics-reader created
+rolebinding.rbac.authorization.k8s.io/orderedhttp-operator-v19-leader-election-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/orderedhttp-operator-v19-manager-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/orderedhttp-operator-v19-proxy-rolebinding created
+service/orderedhttp-operator-v19-controller-manager-metrics-service created
+deployment.apps/orderedhttp-operator-v19-controller-manager created
+```
+
+### Validate that the Controller/Operator is running
+
+```bash
+kubectl -n optest get deployment -l control-plane=controller-manager
+kubectl -n optest get pod -l control-plane=controller-manager
+```
+
+### Create an instance of our Kubernetes Custom Resource (same as above)
+
+Edit the file `config/samples/orderedhttp_v1alpha1_orderedhttp.yaml` to create our
+custom CR
+
+```yaml
+apiVersion: orderedhttp.splicemachine.io/v1alpha1
+kind: OrderedHttp
+metadata:
+  name: orderedhttp-sample
+spec:
+  # Add fields here
+  replicas: 3
+```
+
+```bash
+kubectl -n optest create -f config/samples/orderedhttp_v1alpha1_orderedhttp.yaml
+```
+
 # this creates an instance of our custom 'Kind'
 kubectl create -f deploy/crds/orderedhttp_v1alpha1_orderedhttp_cr.yaml
 ```

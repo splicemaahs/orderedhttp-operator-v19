@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -43,12 +44,13 @@ type OrderedHttpReconciler struct {
 
 // +kubebuilder:rbac:groups=orderedhttp.splicemachine.io,resources=orderedhttps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=orderedhttp.splicemachine.io,resources=orderedhttps/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 
 func (r *OrderedHttpReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reqLogger := r.Log.WithValues("orderedhttp", req.NamespacedName)
 
-	// your logic here
 	// Fetch the OrderedHttp instance
 	orderedHttp := &orderedhttpv1alpha1.OrderedHttp{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, orderedHttp)
@@ -128,6 +130,7 @@ func (r *OrderedHttpReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 			reqLogger.Error(err, "failed to delete a pod")
 			return ctrl.Result{}, err
 		}
+		return ctrl.Result{RequeueAfter: time.Second * 30}, nil
 	}
 
 	// Scale Up Pods
@@ -148,9 +151,8 @@ func (r *OrderedHttpReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 				return ctrl.Result{}, err
 			}
 		}
+		return ctrl.Result{RequeueAfter: time.Second * 30}, nil
 	}
-
-	// end my logic here
 
 	return ctrl.Result{}, nil
 }
