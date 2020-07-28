@@ -158,6 +158,8 @@ git apply patches/controllercode.patch
 
 ### Add Descriptions to the types fields
 
+This is part of the "structured" CRD requirement from Kubernetes 1.16+, this process builds compliant CRD manifests.
+
 ```bash
 mkdir -p patches
 curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/master/patches/controllercode.patch -o patches/typesdescriptions.patch
