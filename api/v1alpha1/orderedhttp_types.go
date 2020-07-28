@@ -28,7 +28,7 @@ type OrderedHttpSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of OrderedHttp. Edit OrderedHttp_types.go to remove/update
+	// Replicas is the number of PODs that will be maintained by the operator
 	Replicas int32 `json:"replicas"`
 }
 
@@ -36,6 +36,8 @@ type OrderedHttpSpec struct {
 type OrderedHttpStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// PodNames is the list of running PODs maintained by the operator
 	PodNames []string `json:"podnames"`
 }
 

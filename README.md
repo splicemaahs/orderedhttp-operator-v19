@@ -141,14 +141,14 @@ curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/m
 git apply patches/apicode.patch
 # the 'make' process builds code based on the properties added to the Spec and Status
 # sections of ./api/orderedhttp/v1alpha1/orderedhttp_types.go'
-make
+make generate
 ```
 
 ### Add reconciler code to the controller
 
 ```bash
 mkdir -p patches
-curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator/master/patches/controllercode.patch -o patches/controllercode.patch
+curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/master/patches/controllercode.patch -o patches/controllercode.patch
 ```
 
 ```bash
@@ -156,9 +156,20 @@ curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator/maste
 git apply patches/controllercode.patch
 ```
 
+### Add Descriptions to the types fields
+
+```bash
+mkdir -p patches
+curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/master/patches/controllercode.patch -o patches/typesdescriptions.patch
+# ./api/v1alpha1/orderedhttp_types.go
+git apply patches/typesdescriptions.patch
+make manifests
+```
+
 ### Update operator deploy for docker image name
 
 ```bash
+make manifests
 vi deploy/operator.yaml
 # change the 'image: REPLACE_IMAGE' reference to 'image: YOURDOCKERID/orderedhttp-operator:latest'
 ```
@@ -169,6 +180,7 @@ vi deploy/operator.yaml
 go mod vendor # <- you need only run this once, and can rebuild with the 'build' command
 # this process will fail on go syntax errors as it builds the code as part of the docker image build.
 operator-sdk build YOURDOCKERID/orderedhttp-operator:latest
+make docker-build IMG=quay.io/$USERNAME/memcached-operator:v0.0.1
 # push our image to Docker Hub
 docker push YOURDOCKERID/orderedhttp-operator:latest
 ```

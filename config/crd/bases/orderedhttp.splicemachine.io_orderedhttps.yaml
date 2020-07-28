@@ -37,8 +37,8 @@ spec:
           description: OrderedHttpSpec defines the desired state of OrderedHttp
           properties:
             replicas:
-              description: Foo is an example field of OrderedHttp. Edit OrderedHttp_types.go
-                to remove/update
+              description: Replicas is the number of PODs that will be maintained
+                by the operator
               format: int32
               type: integer
           required:
@@ -48,9 +48,8 @@ spec:
           description: OrderedHttpStatus defines the observed state of OrderedHttp
           properties:
             podnames:
-              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                of cluster Important: Run "make" to regenerate code after modifying
-                this file'
+              description: PodNames is the list of running PODs maintained by the
+                operator
               items:
                 type: string
               type: array
