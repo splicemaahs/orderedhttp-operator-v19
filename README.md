@@ -154,6 +154,7 @@ vi Makefile
 # repository
 make build
 make push
+cd ..
 ```
 
 ### Create new operator
@@ -204,7 +205,7 @@ This is part of the "structured" CRD requirement from Kubernetes 1.16+, this pro
 
 ```bash
 mkdir -p patches
-curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/master/patches/controllercode.patch -o patches/typesdescriptions.patch
+curl -s https://raw.githubusercontent.com/splicemaahs/orderedhttp-operator-v19/master/patches/typesdescriptions.patch -o patches/typesdescriptions.patch
 # ./api/v1alpha1/orderedhttp_types.go
 git apply patches/typesdescriptions.patch
 make manifests
@@ -248,7 +249,6 @@ make docker-push IMG=${DOCKER_USERNAME}/orderedhttp-operator:v0.0.1
 ### Deploy Operator/Controller to Kubernetes
 
 ```bash
-kubectl create namespace orderedhttp-system
 # the next commands edits this file: config/default/kustomization.yaml
 # these two need to match up until the "system" part
 # An oddity with "kustomize" the "set nameprefix" is CASE sensitive in a very ODD way.
